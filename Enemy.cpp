@@ -66,7 +66,7 @@ bool Enemy::update(float elapsed, vec3 player_pos, std::mt19937 &rnd) {
 	vec3 dif = player_pos - transform->position;
 
 	if (time_to_change <= 0.0f) {
-		std::uniform_int_distribution<float> distribution(2.f,4.f);
+		std::uniform_real_distribution<float> distribution(2.f,4.f);
 		time_to_change += distribution(rnd);
 
 		float mag = length(dif);

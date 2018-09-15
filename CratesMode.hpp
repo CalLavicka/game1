@@ -76,6 +76,8 @@ struct CratesMode : public Mode {
 			return DOWN;
 		case DOWN:
 			return UP;
+		default:
+			return DOWN; // Should not reach
 		}
 	}
 

@@ -208,6 +208,8 @@ CratesMode::CratesMode() {
 				return is_free_space(xpos, ypos - 1, zpos) && is_free_space(xpos + 1, ypos, zpos)
 				&& is_free_space(xpos + 1, ypos - 1, zpos) && is_free_space(xpos, ypos + 1, zpos)
 				&& is_free_space(xpos + 1, ypos + 1, zpos);
+			default:
+				return false; // Should not reach
 			}
 		};
 
