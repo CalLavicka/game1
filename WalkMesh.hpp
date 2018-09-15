@@ -14,7 +14,8 @@ struct WalkMesh {
 	//TODO: consider also loading vertex normals for interpolated "up" direction:
 	//std::vector< glm::vec3 > vertex_normals;
 
-	//This "next vertex" map includes [a,b]->c, [b,c]->a, and [c,a]->b for each triangle, and is useful for checking what's over an edge from a given point:
+	//This "next vertex" map includes [a,b]->c, [b,c]->a, and [c,a]->b for each triangle, and is
+	//useful for checking what's over an edge from a given point:
 	std::unordered_map< glm::uvec2, uint32_t > next_vertex;
 
 
@@ -28,10 +29,10 @@ struct WalkMesh {
 
 	//used to initialize walking -- finds the closest point on the walk mesh:
 	// (should only need to call this at the start of a level)
-	WalkPoint start(glm::vec3 const &world_point) const;
+	WalkPoint start(glm::vec3 const &start_point) const;
 
 	//used to update walk point:
-	void walk(WalkPoint &wp, glm::vec3 const &step) const;
+	void walk(WalkPoint &wp, glm::vec3 const &step, bool edge = false) const;
 
 	//used to read back results of walking:
 	glm::vec3 world_point(WalkPoint const &wp) const {
@@ -84,4 +85,4 @@ Game::update(float elapsed) {
 	//compute rightward direction from forward and up:
 	player_right = glm::cross(player_forward, player_up);
 
-}
+}*/

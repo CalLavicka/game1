@@ -6,12 +6,21 @@
 #include "GL.hpp"
 #include "Scene.hpp"
 #include "Sound.hpp"
+#include "WalkMesh.hpp"
+#include "Enemy.hpp"
 
 #include <SDL.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include <vector>
+
+#define MAP_WIDTH 20
+#define MAP_HEIGHT 20
+#define VERTS_WIDTH 21
+#define VERTS_HEIGHT 21
+
+#define MAP_LEVELS 10
 
 // The 'CratesMode' shows scene with some crates in it:
 
@@ -45,8 +54,40 @@ struct CratesMode : public Mode {
 	Scene scene;
 	Scene::Camera *camera = nullptr;
 
-	Scene::Object *large_crate = nullptr;
-	Scene::Object *small_crate = nullptr;
+	WalkMesh walk_mesh = WalkMesh({}, {});
+	WalkMesh::WalkPoint walk_point;
+
+	float camera_yaw = 0.0f;
+	float camera_pitch = 0.0f;
+
+	std::mt19937 random_gen;
+
+	enum Direction : char {
+		LEFT = 'l', RIGHT = 'r', UP = 'u', DOWN = 'd'
+	};
+
+	static Direction rev_direction(Direction dir) {
+		switch(dir) {
+		case LEFT:
+			return RIGHT;
+		case RIGHT:
+			return LEFT;
+		case UP:
+			return DOWN;
+		case DOWN:
+			return UP;
+		}
+	}
+
+	enum PlatformType : char {
+		NONE = '0', FLAT = 'F', SLOPE = 'S'
+	};
+
+	std::vector<Scene::Object *> platforms;
+	PlatformType platform_types[MAP_WIDTH][MAP_HEIGHT][MAP_LEVELS];
+	
+	std::vector<Scene::Object *> buttons;
+	std::vector<Enemy> enemies;
 
 	//when this reaches zero, the 'dot' sample is triggered at the small crate:
 	float dot_countdown = 1.0f;

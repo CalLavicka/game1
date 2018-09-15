@@ -24,6 +24,8 @@ if m:
 	layer = int(m.group(2))
 outfile = args[1]
 
+
+
 assert layer >= 1 and layer <= 20
 
 print("Will export meshes referenced from layer " + str(layer) + " of '" + infile + "' to '" + outfile + "'.")
@@ -73,6 +75,8 @@ import argparse
 
 
 bpy.ops.wm.open_mainfile(filepath=infile)
+
+
 
 #meshes to write:
 to_write = set()
