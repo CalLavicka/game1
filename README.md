@@ -1,11 +1,11 @@
 # Game Information
 (Note: fill in this portion with information about your game.)
 
-Title: (TODO: your game's title)
+Title: Shutdown!
 
-Author: (TODO: your name)
+Author: Cal Lavicka
 
-Design Document: [TODO: name of design document](TODO: link to design document)
+Design Document: [Shutdown!](http://graphics.cs.cmu.edu/courses/15-466-f18/game1-designs/clavicka/)
 
 Screen Shot:
 
@@ -13,15 +13,19 @@ Screen Shot:
 
 How To Play:
 
-TODO: describe the controls and (if needed) goals/strategy.
+Walk around the interconnected platforms with WASD, and use the mouse to control the camera. Try and hit all 5 buttons on the map (walk up to them) before being caught by the scouts. Use the sound of the scouts to avoid them.
 
 Changes From The Design Document:
 
-TODO: what did you need to add/remove/modify from the original design? Why?
+I wanted in the original design to have the enemies have pathfinding and not phase through platforms, but for the sake of time and simplicity they don't avoid platforms and just phase through them. Also, I decided that pressing space near the buttons was unecessary and just made them automatically pressed.
 
 Good / Bad / Ugly Code:
 
-TODO: provide examples of code you wrote from this project that you think is good (elegant, simple, useful), bad (hack-y, brittle, unreadable), and ugly (particularly inelegant). Provide a sentence or two of justification for the examples.
+For good code, I think the generation code is particularly cool. I made use of many c++ lambdas and BFS to gernerate an interesting branching set of paths with dead ends, which make the game way harder.
+
+For bad code, I think they way I handled buttons was very hacky, but it was pretty easy to code and works well enough for the game.
+
+For ugly code, in WalkMesh.cpp, for pushing the player along the edge, I add a little bit to the vector in the opposite direction away from the edge. This accounts for floating point errors which would normally continually push the vector into the wall and cause an infinite loop. This little push works surprisingly well and provides no bad side-effects.
 
 # Using This Base Code
 
