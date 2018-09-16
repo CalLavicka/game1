@@ -11,7 +11,7 @@
 
 #define PI 3.14159265f
 
-#define COLLISION_RADIUS_2 0.25f
+#define ENEMY_WIDTH 0.35f
 
 using namespace glm;
 
@@ -35,10 +35,15 @@ Load< GLuint > enemy_meshes_for_vertex_color_program(LoadTagDefault, [](){
 	return new GLuint(enemy_meshes->make_vao_for_program(vertex_color_program->program));
 });
 
+Load< Sound::Sample > enemy_sound(LoadTagDefault, [](){
+	return new Sound::Sample(data_path("drone.wav"));
+});
+
 Enemy::Enemy(Scene &scene, vec3 pos) {
 
 	transform = scene.new_transform();
 	transform->position = pos;
+	transform->scale = vec3(1.5f, 1.5f, 1.5f);
 
 	object = scene.new_object(transform);
 	object->program = vertex_color_program->program;
@@ -50,8 +55,9 @@ Enemy::Enemy(Scene &scene, vec3 pos) {
 	object->start = mesh.start;
 	object->count = mesh.count;
 
-	transform->scale = vec3(1,1,1);
 	dir = POS_X;
+
+	loop = enemy_sound->play(transform->position, 0.5f, Sound::Loop);
 }
 
 bool Enemy::update(float elapsed, vec3 player_pos, std::mt19937 &rnd) {
@@ -94,11 +100,14 @@ bool Enemy::update(float elapsed, vec3 player_pos, std::mt19937 &rnd) {
 		} else {
 			chosen = POS_X;
 		}
-		std::cout << "NEW DIR:" << chosen << std::endl;
+		//std::cout << "NEW DIR:" << chosen << std::endl;
 		this->dir = chosen;
 	}
 
-	if (dot(dif, dif) < COLLISION_RADIUS_2) {
+	glm::mat4 pos_to_world = transform->make_local_to_world();
+	loop->set_position( pos_to_world * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) );
+
+	if (abs(dif.x) < ENEMY_WIDTH && abs(dif.y) < ENEMY_WIDTH && abs(dif.z) < ENEMY_WIDTH) {
 		return true;
 	}
 	return false;

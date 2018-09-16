@@ -41,10 +41,17 @@ Load< Sound::Sample > sample_loop(LoadTagDefault, [](){
 });
 
 CratesMode::CratesMode() {
-	//----------------
-	//set up scene:
-	//TODO: this should load the scene from a file!
 
+	SDL_SetRelativeMouseMode(SDL_TRUE);
+	mouse_captured = true;
+
+	initiate_game();
+	
+	//start the 'loop' sample playing at the large crate:
+	//loop = sample_loop->play(large_crate->transform->position, 1.0f, Sound::Loop);
+}
+
+void CratesMode::initiate_game() {
 	auto attach_platform_object = [this](Scene::Transform *transform, std::string const &name) {
 		Scene::Object *object = scene.new_object(transform);
 		object->program = vertex_color_program->program;
@@ -57,6 +64,8 @@ CratesMode::CratesMode() {
 		object->count = mesh.count;
 		return object;
 	};
+
+	scene.~Scene();
 
 	{ //Camera looking at the origin:
 		Scene::Transform *transform = scene.new_transform();
@@ -98,7 +107,7 @@ CratesMode::CratesMode() {
 
 			platform_types[square_x][square_y][level] = FLAT;
 
-			std::cout << "ADDED: " << square_x << ", " << square_y << ", " << level << std::endl;
+			//std::cout << "ADDED: " << square_x << ", " << square_y << ", " << level << std::endl;
 
 			return obj;
 		};
@@ -307,35 +316,10 @@ CratesMode::CratesMode() {
 		(void) gen_func;
 		(void) add_slope;
 
-		/*		
-		add_square(0, 0, 0);
-		add_square(0, 1, 0);
-		add_square(0, 2, 0);
-		add_square(1, 2, 0);
-		add_slope(0, 3, 0, UP);
-		add_square(0, 4, 1);
-		add_square(1, 4, 1);
-		add_slope(2, 4, 1, RIGHT);
-		add_square(3, 4, 2);
-
-		add_square(1, 0, 0);
-		add_square(2, 0, 0);
-		add_square(3, 0, 0);
-		add_square(3, 1, 0);
-		add_square(3, 2, 0);
-		add_square(3, 3, 0);
-		add_square(3, 4, 0);
-		add_slope(3, 5, 0, UP);
-		add_slope(3, 6, 1, UP);
-		add_square(3, 7, 2);
-		add_slope(2, 7, 2, LEFT);
-		add_square(1, 7, 3);
-		add_slope(1, 6, 3, DOWN);
-		add_square(1, 5, 4);
-		add_square(2, 5, 4);
-		*/
 		gen_func(MAP_WIDTH/2, MAP_HEIGHT/2, 2);
+
 		// pick 5 buttons
+		buttons.clear();
 		int to_place = 5;
 		while(end_pts.size() > 0 && to_place > 0) {
 			size_t rand_index = rnd() % end_pts.size();
@@ -400,9 +384,10 @@ CratesMode::CratesMode() {
 			}
 		}
 
+		/*
 		for (auto i = tris.begin(); i != tris.end(); ++i) {
    			std::cout << '[' << i->x << ", " << i->y << ", " << i->z << "] ";
-		}
+		}*/
 		std::cout << std::endl;
 
 		walk_mesh = WalkMesh(verts, tris);
@@ -412,15 +397,16 @@ CratesMode::CratesMode() {
 	}
 
 	{ //Setup enemies
+		for (Enemy &enemy : enemies) {
+			enemy.loop->stop();
+		}
+		enemies.clear();
 		enemies.emplace_back(scene, vec3(0, 20, 2));
 		enemies.emplace_back(scene, vec3(0, 10, 1));
-		enemies.emplace_back(scene, vec3(0, 15, 3));
+		enemies.emplace_back(scene, vec3(15, 0, 3));
 		enemies.emplace_back(scene, vec3(0, 5, 4));
-		enemies.emplace_back(scene, vec3(0, 0, 0));
+		enemies.emplace_back(scene, vec3(20, 0, 1));
 	}
-	
-	//start the 'loop' sample playing at the large crate:
-	//loop = sample_loop->play(large_crate->transform->position, 1.0f, Sound::Loop);
 }
 
 CratesMode::~CratesMode() {
@@ -449,20 +435,9 @@ bool CratesMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 		}
 	}
 	//handle tracking the mouse for rotation control:
-	if (!mouse_captured) {
+	if (mouse_captured) {
 		if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-			Mode::set_current(nullptr);
-			return true;
-		}
-		if (evt.type == SDL_MOUSEBUTTONDOWN) {
-			SDL_SetRelativeMouseMode(SDL_TRUE);
-			mouse_captured = true;
-			return true;
-		}
-	} else if (mouse_captured) {
-		if (evt.type == SDL_KEYDOWN && evt.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
-			SDL_SetRelativeMouseMode(SDL_FALSE);
-			mouse_captured = false;
+			show_pause_menu();
 			return true;
 		}
 		if (evt.type == SDL_MOUSEMOTION) {
@@ -486,6 +461,10 @@ bool CratesMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_siz
 }
 
 void CratesMode::update(float elapsed) {
+	if (!mouse_captured) {
+		return; // Don't do anything when paused
+	}
+
 	glm::mat3 directions = glm::mat3_cast(
 				glm::angleAxis(camera_yaw, glm::vec3(0.0f, 0.0f, 1.0f))
 				* glm::angleAxis(PI / 2.f, glm::vec3(1.0f, 0.0f, 0.0f)));
@@ -527,10 +506,13 @@ void CratesMode::update(float elapsed) {
 	for (Enemy &enemy : enemies) {
 		if (enemy.update(elapsed, camera->transform->position, random_gen)) {
 			std::cout << "LOSE" << std::endl;
+			show_end_screen("YOU LOSE");
+			return;
 		}
 	}
 
-	for (auto &button : buttons) {
+	for (size_t i = 0; i < buttons.size(); i++) {
+		auto &button = buttons[i];
 		if (button == NULL) {
 			continue;
 		}
@@ -538,8 +520,14 @@ void CratesMode::update(float elapsed) {
 		if (dot(dif, dif) < 0.5f) {
 			std::cout << "DELETING BUTTON: " << button << std::endl;
 			scene.delete_object(button);
-			button = NULL;
+			enemies.emplace_back(scene, vec3(-5, -5, 2));
+			enemies.emplace_back(scene, vec3(25, 25, 2));
+			buttons.erase(buttons.begin() + i);
+			i--;
 		}
+	}
+	if (buttons.size() == 0) {
+		show_end_screen("YOU WIN");
 	}
 }
 
@@ -567,7 +555,7 @@ void CratesMode::draw(glm::uvec2 const &drawable_size) {
 		glDisable(GL_DEPTH_TEST);
 		std::string message;
 		if (mouse_captured) {
-			message = "ESCAPE TO UNGRAB MOUSE * WASD MOVE";
+			message = "ESCAPE TO PAUSE * WASD MOVE";
 		} else {
 			message = "CLICK TO GRAB MOUSE * ESCAPE QUIT";
 		}
@@ -575,6 +563,14 @@ void CratesMode::draw(glm::uvec2 const &drawable_size) {
 		float width = text_width(message, height);
 		draw_text(message, glm::vec2(-0.5f * width,-0.99f), height, glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
 		draw_text(message, glm::vec2(-0.5f * width,-1.0f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+		char left[25] = "BUTTONS LEFT          ";
+		for(int i=0; i<buttons.size(); i++) {
+			left[14 + i] = '*';
+			//left[15 + i] = '\0';
+		}
+		draw_text(left, glm::vec2(-float(drawable_size.x) / float(drawable_size.y),1.f - height), height, glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
+		draw_text(left, glm::vec2(-float(drawable_size.x) / float(drawable_size.y),0.99f - height), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
 		glUseProgram(0);
 	}
@@ -584,14 +580,54 @@ void CratesMode::draw(glm::uvec2 const &drawable_size) {
 
 
 void CratesMode::show_pause_menu() {
+	SDL_SetRelativeMouseMode(SDL_FALSE);
+	mouse_captured = false;
+
+	controls.left = false;
+	controls.right = false;
+	controls.forward = false;
+	controls.backward = false;
+	
 	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
 
 	std::shared_ptr< Mode > game = shared_from_this();
 	menu->background = game;
 
 	menu->choices.emplace_back("PAUSED");
-	menu->choices.emplace_back("RESUME", [game](){
+	menu->choices.emplace_back("RESUME", [game, this](){
 		Mode::set_current(game);
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+		mouse_captured = true;
+	});
+	menu->choices.emplace_back("QUIT", [](){
+		Mode::set_current(nullptr);
+	});
+
+	menu->selected = 1;
+
+	Mode::set_current(menu);
+}
+
+void CratesMode::show_end_screen(std::string message) {
+	SDL_SetRelativeMouseMode(SDL_FALSE);
+	mouse_captured = false;
+
+	controls.left = false;
+	controls.right = false;
+	controls.forward = false;
+	controls.backward = false;
+
+	std::shared_ptr< MenuMode > menu = std::make_shared< MenuMode >();
+
+	std::shared_ptr< Mode > game = shared_from_this();
+	menu->background = game;
+
+	menu->choices.emplace_back(message);
+	menu->choices.emplace_back("TRY AGAIN", [game, this](){
+		Mode::set_current(game);
+		initiate_game();
+		SDL_SetRelativeMouseMode(SDL_TRUE);
+		mouse_captured = true;
 	});
 	menu->choices.emplace_back("QUIT", [](){
 		Mode::set_current(nullptr);

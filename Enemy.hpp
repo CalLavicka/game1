@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Scene.hpp"
+#include "Sound.hpp"
 
 #include <glm/glm.hpp>
 #include <random>
@@ -24,6 +25,8 @@ struct Enemy {
 	Scene::Transform * transform = nullptr;
 	Scene::Object * object = nullptr;
 	Direction dir;
+
+	std::shared_ptr< Sound::PlayingSample > loop;
 
 	float time_to_change = 0.0f;
 };

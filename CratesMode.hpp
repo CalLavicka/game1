@@ -42,6 +42,11 @@ struct CratesMode : public Mode {
 	//starts up a 'quit/resume' pause menu:
 	void show_pause_menu();
 
+	// When game won / loss
+	void show_end_screen(std::string message);
+
+	void initiate_game();
+
 	struct {
 		bool forward = false;
 		bool backward = false;
